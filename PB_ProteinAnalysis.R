@@ -12,37 +12,59 @@ trans01 <- preProcess(x=protein.c %>% select(-c(SiteNum, Response)), method="ran
                       rangeBounds=c(0,1))
 protein.01 <- predict(trans01, newdata=protein.c)
 
-# Logistic Regression
+### Logistic Regression
+
+# Find the best model using an exhaustive search and Cross-validation 
+# (Make sure Response is last variable)
+# THIS TAKES A MINUTE OR SO
 models <- protein.01 %>% 
   filter(!is.na(Response)) %>% 
   select(-c(Set, SiteNum)) %>%
   as.data.frame() %>% 
-  drop_na() %>% 
   bestglm(IC = "AIC", family = binomial, method = "exhaustive")
 models$BestModel
 beep()
+# looks like only Consensus and normalization made the best model
 
-
+# make a new data set of just significant variables found from bestglm
 protein.m <- protein.01 %>% 
-  filter(!is.na(Response)) %>% 
-  select(-c(Set, SiteNum))
-log_mod <- glm(Response ~ normalization+Iupred.score+Consensus, data = protein.m, family = binomial)
-pred_data <- protein.01 %>% 
-  filter(is.na(Response)) %>% 
-  select(-c(Set, SiteNum))
+  select(Consensus, normalization, Response)
+
+# Train the model
+log_mod <- glm(Response ~., data = protein.m %>% filter(!is.na(Response)), family = binomial)
+
+# Separate the data for prediction
+pred_data <- protein.m %>% 
+  filter(is.na(Response))
+
+# make a vector of prediction probabilities
 pred.probs = predict.glm(log_mod, newdata = pred_data, type="response")
-n_cutoff <- 100
-cutoff <- seq(0.01,0.99,length=n_cutoff)
+
+### Now we will determine the best cutoff 
+
+# how many cutoffs will there be?
+n_cutoff <- 999
+# make the 
+cutoffs <- seq(0.001,0.99,length=n_cutoff)
+# initizalize the vector for misclass rate
 misclass <- rep(0,n_cutoff)
 
-for(i in 1:n_cutoff){
-  preds <- 1 * (pred.probs > cutoff[i])               ##### predict 
-  conf.mat <- table(preds,pred_data)                  ##### get confusion matrix
+# find misclass rate for each cutoff
+for(i in seq_along(cutoffs)){
+  preds <- 1 * (pred.probs > cutoffs[i])               ##### predict 
+  conf.mat <- table(preds, pred.probs)                  ##### get confusion matrix
   misclass[i] <- 1 - sum(diag(conf.mat))/sum(conf.mat)    #### get misclassification rate
 }
-best_cutoff <- cutoff[which.min(misclass)]
+# find best cutoff
+best_cutoff <- cutoffs[which.min(misclass)]
+# plot the misclass rates
 plot(cutoff,misclass,type="l",ylab="Misclassification Rate",xlab="Cutoff")
 abline(v = best_cutoff, col = "red")
+
+
+
+
+
 
 ### Machine Learning
 

@@ -18,46 +18,52 @@ protein <- protein %>%
 summary(protein)
 
 
-# Missing values
-plot_missing(protein)
-
-# Replace missing "Consensus" values with the mean of it's SVM and ANN values
-protein.c <- protein %>%
-  mutate(PSSM = na.approx(PSSM, ANN)) %>% 
-  rowwise() %>% 
-  mutate(Consensus = mean(Consensus, mean(c(ANN, SVM))))
-
-protein.d <- protein %>%
-  mutate(PSSM = na.approx(PSSM, ANN), Consensus = na.approx(SVM, ANN)) 
+### Missing values
+plot_missing(protein.c)
 
 # Correlation matrix
 plot_correlation(protein.c, type="continuous", 
                  cor_args=list(use="pairwise.complete.obs"))
 
+# Replace missing "Consensus" values with the mean of it's SVM and ANN values
+protein.c <- protein %>%
+  rowwise() %>% 
+  mutate(Consensus = mean(c(ANN, SVM)))
+
+# Make linear model to impute missing PSSM values; regress on SVM & Consensus variables
+
+# model
+imp_lm <- lm(PSSM ~ SVM+Consensus, data = protein.c)
+# Get the rows with missing PSSM values
+missing_PSSM <- protein.c %>%
+  filter(is.na(PSSM))
+# predict those values with model
+new_PSSMs <- predict(imp_lm, missing_PSSM)
+
+# Impute predicted values into our data
+protein.c <- protein.c %>%
+  sapply()
+
+protein.c <- protein.c %>%
+  mutate(PSSM =)
+
+
+source("HelpfulFunctions.R")
 # Jittered scatterplot of Consensus and Response, with color as Amino Acid
-sp1 <- protein %>% ggplot(mapping=aes(x=SVM, y=Response, col = Amino.Acid)) +
-  geom_point() +
-  geom_smooth()
-
-sp2 <- protein %>% ggplot(mapping=aes(x=normalization, y=Response, col = Amino.Acid)) +
-  geom_point() +
-  geom_smooth()
-
-sp3 <- protein %>% ggplot(mapping=aes(x=Iupred.score, y=Response, col = Amino.Acid)) +
-  geom_point() +
-  geom_smooth()
+# (Using a function I made found in HelpfulFunctions.R)
+sp1 <- protein %>% scp_smooth(SVM, Response, col = Amino.Acid)
+sp2 <- protein %>% scp_smooth(normalization, Response, col = Amino.Acid)
+sp3 <- protein %>% scp_smooth(Iupred.score, Response, col = Amino.Acid)
 
 grid.arrange(sp1, sp2, sp3, ncol = 2)
+
 # table of Amino Acid and Response
 addmargins(table(protein$Amino.Acid, protein$Response))
-
-# Just drop ANN, PSSM, and Consensus because they are so heavily correlated to
-# SVM and SVM has 0 missing 
-#protein.c <- protein %>% select(-c(ANN, PSSM, Consensus))
 
 ### Visualization
 
 plot_missing(protein.c)
+
 # Histograms
 protein.c %>% ggplot(mapping = aes(SVM)) + 
   geom_histogram(bins = 100)

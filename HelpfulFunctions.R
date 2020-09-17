@@ -6,3 +6,4 @@ scp_smooth <- function(data, x, y, ...) {
     geom_point() +
     geom_smooth()
 }
+
