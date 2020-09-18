@@ -1,5 +1,4 @@
 # libraries
-library(bestglm)
 library(caret)
 library(tidyverse)
 library(car)
@@ -10,6 +9,12 @@ protein.clean <- read_csv("ProteinCleaned.csv")
 
 # Make the Amino.Acid and Response variables factors
 protein.clean <- protein.clean %>% mutate_at(vars(Amino.Acid, Response), factor)
+
+# Trying to filter out highly correlated variables
+# corrTrans <- preProcess(x = protein.clean %>% select(-c(SiteNum, Response)), 
+#                        method = "corr")
+
+# protein.corr <- predict(corrTrans, newdata = protein.clean)
 
 # trans01 <- preProcess(x = protein.c %>% select(-c(SiteNum, Response)), 
 #                      method = "range", 
@@ -25,11 +30,11 @@ protein.clean <- protein.clean %>% mutate_at(vars(Amino.Acid, Response), factor)
 ## Machine Learning ##
 ######################
 
-protein_train <- protein.clean %>% filter(Set == 'train') %>% 
+protein_train <- protein.corr %>% filter(Set == 'train') %>% 
   select(-Set, -SiteNum) %>% 
   mutate(Response = ifelse(Response == 1, 'Yes', 'No'))
 
-protein_test <- protein.clean %>% filter(Set == 'test') %>% select(-Set) 
+protein_test <- protein.corr %>% filter(Set == 'test') %>% select(-Set) 
 
 gbm.model <- train(Response ~ .,
                    data = protein_train,
@@ -39,7 +44,6 @@ gbm.model <- train(Response ~ .,
                                             classProbs = TRUE,
                                             method = 'cv',
                                             number = 10),
-                   preProcess = 'corr',
                    tuneGrid = expand.grid(n.trees = 100,
                                           interaction.depth = 1,
                                           shrinkage = .1,

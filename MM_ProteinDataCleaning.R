@@ -1,4 +1,4 @@
-### Cleaning the Protein Data Set
+### Cleaning the Protein Data Set ###
 
 # libraries
 library(tidyverse)
@@ -8,7 +8,7 @@ library(gridExtra)
 library(car)
 library(missForest)
 
-### Load in data and create one tibble
+# Load in data and create one tibble
 protein.train <- read_csv("ProteinTrain.csv")
 protein.test <- read_csv("ProteinTest.csv")
 
@@ -34,18 +34,16 @@ filled_nas <- protein %>%
   as.data.frame() %>% 
   missForest()
 
-# merge Response and Set back with other variables
-protein.c <- filled_nas$ximp %>%  cbind(., protein %>% select(Set, Response)) %>% select(Set, SiteNum, Response, Amino.Acid, Iupred.score, ANN, PSSM, SVM, Consensus, normalization)
+# Merge Response and Set back with other variables
+protein.clean <- filled_nas$ximp %>%  cbind(., protein %>% select(Set, Response)) %>% select(Set, SiteNum, Response, Amino.Acid, Iupred.score, ANN, PSSM, SVM, Consensus, normalization)
 
 # Correlation matrix
-plot_correlation(protein.c, type = "continuous", 
+plot_correlation(protein.clean, 
+                 type = "continuous", 
                  cor_args = list(use = "pairwise.complete.obs"))
 
 # Confirming that all NAs have been dealt with
-plot_missing(protein.c)
+plot_missing(protein.clean)
 
-# Histograms
-protein.c %>% ggplot(mapping = aes(SVM)) + 
-  geom_histogram(bins = 100)
-
-protein.c %>% write_csv("MM_ProteinCleaned.csv")
+# Create a .csv file of the cleaned data
+protein.clean %>% write_csv("MM_ProteinCleaned.csv")
