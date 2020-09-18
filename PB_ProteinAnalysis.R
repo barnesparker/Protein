@@ -4,7 +4,6 @@ library(caret)
 library(tidyverse)
 library(car)
 library(beepr)
-
 protein.c <- read_csv("ProteinCleaned.csv")
 protein.c <- protein.c %>% 
   mutate(Amino.Acid = as_factor(Amino.Acid)) %>% 
@@ -21,15 +20,6 @@ protein.pca <- predict(pcTrans, newdata=protein.c)
 
 protein.train <- protein.01 %>% filter(!is.na(Response))
 protein.test <- protein.01 %>% filter(is.na(Response))
-
-# Janky f1 function from StackOverflow
-f1 <- function (data, lev = NULL, model = NULL) {
-  precision <- posPredValue(data$pred, data$obs, positive = "pass")
-  recall  <- sensitivity(data$pred, data$obs, postive = "pass")
-  f1_val <- (2 * precision * recall) / (precision + recall)
-  names(f1_val) <- c("F1")
-  f1_val
-} 
 
 # Random Forest
 
@@ -53,7 +43,7 @@ svm <- train(form=Response~.,
              trControl=trainControl(method="repeatedcv",
                                     number=10, #Number of pieces of your data
                                     repeats=3,
-                                    summaryFunction = f1)#repeats=1 = "cv"
+                                    summaryFunction = prSummary)#repeats=1 = "cv"
              #tuneGrid=expand.grid(C = 1)
 )
 beep()
@@ -76,3 +66,20 @@ nb <- train(form=Response~.,
 beep()
 plot(nb)
 nb$results
+
+
+### Gradient Boosting
+g.grid <- expand.grid(n.trees = 100, interaction.depth=1, shrinkage=.1, n.minobsinnode = 10)
+gbm <- train(form=Response~.,
+            data=(protein.train %>% select(-Set, -SiteNum)),
+            method='gbm',
+            trControl=trainControl(method="repeatedcv",
+                                   number=10, #Number of pieces of your data
+                                   repeats=3,
+                                   summaryFunction = prSummary), #repeats=1 = "cv"
+            tuneGrid=g.grid
+)
+beep()
+plot(gbm)
+gbm$results
+
