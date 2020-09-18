@@ -10,17 +10,21 @@ protein.c <- protein.c %>%
   mutate(Amino.Acid = as_factor(Amino.Acid)) %>% 
   mutate(Response = as_factor(Response))
 
-trans01 <- preProcess(x=protein.c %>% select(-c(SiteNum, Response)), method="range",
-                      rangeBounds=c(0,1))
-protein.01 <- predict(trans01, newdata=protein.c)
+trans01 <- preProcess(x = protein.c %>% select(-c(SiteNum, Response)), 
+                      method = "range", 
+                      rangeBounds = c(0,1))
+protein.01 <- predict(trans01, newdata = protein.c)
 
+# PCA Transformation of the data
 pcTrans <- preProcess(x=protein.c %>% select(-Response), method="pca")
 protein.pca <- predict(pcTrans, newdata=protein.c)
 
-### Machine Learning
+######################
+## Machine Learning ##
+######################
 
-protein.train <- protein.01 %>% filter(!is.na(Response))
-protein.test <- protein.01 %>% filter(is.na(Response))
+protein_train <- protein.01 %>% filter(!is.na(Response))
+protein_test <- protein.01 %>% filter(is.na(Response))
 
 # Janky f1 function from StackOverflow
 f1 <- function (data, lev = NULL, model = NULL) {
@@ -76,3 +80,13 @@ nb <- train(form=Response~.,
 beep()
 plot(nb)
 nb$results
+
+rpart <- train(Response ~ ., 
+               data = protein.train %>% select(-Set, -SiteNum),
+               method = "rpart",
+               metric = "F",
+               trControl = trainControl(summaryFunction = prSummary, 
+                                        classProbs = TRUE,
+                                        method = 'cv',
+                                        number = 10),
+               tuneLength = 5)
