@@ -4,6 +4,7 @@ library(caret)
 library(tidyverse)
 library(car)
 library(beepr)
+
 protein.c <- read_csv("ProteinCleaned.csv")
 protein.c <- protein.c %>% 
   mutate(Amino.Acid = as_factor(Amino.Acid)) %>% 
