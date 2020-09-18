@@ -21,11 +21,14 @@ summary(protein)
 
 ### Missing values
 plot_missing(protein)
-forest <- protein %>% 
+
+filled_nas <- protein %>% 
   select(-c(Set, Response)) %>% 
-  mutate(Amino.Acid = as_factor(Amino.Acid)) %>% 
   as.data.frame() %>% 
   missForest()
+
+protein.c %>% 
+  bind_rows(filled_nas %>% )
 forest$ximp
 # Correlation matrix
 plot_correlation(protein.c, type="continuous", 
