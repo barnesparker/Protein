@@ -46,11 +46,12 @@ gbm.model <- train(Response ~ .,
                                           n.minobsinnode = 10
                                           )
                    )
+
 gbm.model
 
 gbm.preds <- predict(gbm.model, protein_test)
 
-gbm.submission <- data.frame(Id = protein_test %>% select(SiteNum), 
+gbm.submission <- data.frame(Id = protein_test %>% pull(SiteNum), 
                              Predicted = gbm.preds) %>% 
   mutate(Predicted = ifelse(Predicted == 'Yes', 1, 0))
 
