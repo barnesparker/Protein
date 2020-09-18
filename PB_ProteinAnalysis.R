@@ -6,7 +6,8 @@ library(car)
 library(beepr)
 protein.c <- read_csv("ProteinCleaned.csv")
 protein.c <- protein.c %>% 
-  mutate(Amino.Acid = as_factor(Amino.Acid))
+  mutate(Amino.Acid = as_factor(Amino.Acid)) %>% 
+  mutate(Response = as_factor(Response))
 
 trans01 <- preProcess(x=protein.c %>% select(-c(SiteNum, Response)), method="range",
                       rangeBounds=c(0,1))
@@ -17,9 +18,7 @@ protein.pca <- predict(pcTrans, newdata=protein.c)
 
 ### Machine Learning
 
-protein.train <- protein.01 %>% filter(!is.na(Response)) %>% 
-  mutate(Response = as_factor(Response))
-
+protein.train <- protein.01 %>% filter(!is.na(Response))
 protein.test <- protein.01 %>% filter(is.na(Response))
 
 
@@ -39,19 +38,18 @@ rf$bestTune
 
 ### Support Vector Machine
 
-svm <- train(form=Response~.,
+svmPoly <- train(form=Response~.,
              data=(protein.train %>% select(-Set, -SiteNum)),
-             method='svmLinear',
+             method='svmRadial',
              trControl=trainControl(method="repeatedcv",
                                     number=10, #Number of pieces of your data
-                                    repeats=3), #repeats=1 = "cv"
-             tuneGrid=expand.grid(C = 1:3)
+                                    repeats=3) #repeats=1 = "cv"
+             #tuneGrid=expand.grid(C = 1)
 )
 beep()
-plot(svm)
-svm$bestTune
-svm$results
-confusionMatrix(data = test_set$pred, reference = test_set$obs, mode = "prec_recall")
+plot(svmPoly)
+svmPoly$bestTune
+svmPoly$results
 svm.preds <- data.frame(Id=protein.test$SiteNum, Predicted=predict(svm, newdata=protein.test))
 write_csv(x=svm.preds, path="./PB_SVM_Preds.csv")
 
@@ -62,8 +60,7 @@ nb <- train(form=Response~.,
             method='nb',
             trControl=trainControl(method="repeatedcv",
                                    number=10, #Number of pieces of your data
-                                   repeats=3,
-                                   summaryFunction = f1) #repeats=1 = "cv"
+                                   repeats=3) #repeats=1 = "cv"
             #tuneGrid=enet.grid
 )
 beep()
