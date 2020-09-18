@@ -21,6 +21,14 @@ protein.pca <- predict(pcTrans, newdata=protein.c)
 protein.train <- protein.01 %>% filter(!is.na(Response))
 protein.test <- protein.01 %>% filter(is.na(Response))
 
+# Janky f1 function from StackOverflow
+f1 <- function (data, lev = NULL, model = NULL) {
+  precision <- posPredValue(data$pred, data$obs, positive = "pass")
+  recall  <- sensitivity(data$pred, data$obs, postive = "pass")
+  f1_val <- (2 * precision * recall) / (precision + recall)
+  names(f1_val) <- c("F1")
+  f1_val
+} 
 
 # Random Forest
 
@@ -43,7 +51,8 @@ svm <- train(form=Response~.,
              method='svmLinear',
              trControl=trainControl(method="repeatedcv",
                                     number=10, #Number of pieces of your data
-                                    repeats=3) #repeats=1 = "cv"
+                                    repeats=3,
+                                    summaryFunction = f1)#repeats=1 = "cv"
              #tuneGrid=expand.grid(C = 1)
 )
 beep()
