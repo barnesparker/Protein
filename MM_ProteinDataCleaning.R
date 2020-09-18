@@ -48,4 +48,4 @@ plot_missing(protein.c)
 protein.c %>% ggplot(mapping = aes(SVM)) + 
   geom_histogram(bins = 100)
 
-protein.c %>% write_csv("ProteinCleaned.csv")
+protein.c %>% write_csv("MM_ProteinCleaned.csv")
