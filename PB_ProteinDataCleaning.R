@@ -6,6 +6,7 @@ library(DataExplorer)
 library(zoo)
 library(gridExtra)
 library(car)
+library(missForest)
 ### Load in data and create one tibble
 protein.train <- read_csv("ProteinTrain.csv")
 protein.test <- read_csv("ProteinTest.csv")
@@ -19,8 +20,13 @@ summary(protein)
 
 
 ### Missing values
-plot_missing(protein.c)
-
+plot_missing(protein)
+forest <- protein %>% 
+  select(-c(Set, Response)) %>% 
+  mutate(Amino.Acid = as_factor(Amino.Acid)) %>% 
+  as.data.frame() %>% 
+  missForest()
+forest$ximp
 # Correlation matrix
 plot_correlation(protein.c, type="continuous", 
                  cor_args=list(use="pairwise.complete.obs"))
@@ -28,29 +34,23 @@ plot_correlation(protein.c, type="continuous",
 # Replace missing "Consensus" values with the mean of it's SVM and ANN values
 protein.c <- protein %>%
   rowwise() %>% 
-  mutate(Consensus = mean(c(ANN, SVM)))
+  mutate(Consensus = replace_na(Consensus, mean(c(ANN, SVM)))) %>% 
+  arrange(SiteNum)
 
 # Make linear model to impute missing PSSM values; regress on SVM & Consensus variables
 
 # model
 imp_lm <- lm(PSSM ~ SVM+Consensus, data = protein.c)
-# Get the rows with missing PSSM values
-missing_PSSM <- protein.c %>%
-  filter(is.na(PSSM))
-# predict those values with model
-new_PSSMs <- predict(imp_lm, missing_PSSM)
 
 # Impute predicted values into our data
 protein.c <- protein.c %>%
-  sapply()
+  rowwise() %>% 
+  mutate(PSSM = replace_na(PSSM, predict(imp_lm, newdata = tibble(SVM, Consensus))))
 
-protein.c <- protein.c %>%
-  mutate(PSSM =)
-
-
+protein.test <- aregImpute(~Consensus+SVM+normalization, data = protein.c)
+protein.test$imputed
 source("HelpfulFunctions.R")
-# Jittered scatterplot of Consensus and Response, with color as Amino Acid
-# (Using a function I made found in HelpfulFunctions.R)
+# Scatterplots with smoothers (Using a function I made found in HelpfulFunctions.R)
 sp1 <- protein %>% scp_smooth(SVM, Response, col = Amino.Acid)
 sp2 <- protein %>% scp_smooth(normalization, Response, col = Amino.Acid)
 sp3 <- protein %>% scp_smooth(Iupred.score, Response, col = Amino.Acid)
