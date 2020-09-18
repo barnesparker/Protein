@@ -23,28 +23,36 @@ summary(protein)
 ### Missing values
 plot_missing(protein)
 
+# Use random forests to fill NA values
 filled_nas <- protein %>% 
-  select(-c(Set, Response)) %>% 
+  select(-c(Response, Set)) %>% 
   as.data.frame() %>% 
   missForest()
 
+<<<<<<< Updated upstream
 # protein.c %>% 
 #  bind_rows(filled_nas %>% )
 # forest$ximp
+=======
+# merge Response and Set back with other variables
+protein.c <- filled_nas$ximp %>%  
+  merge(protein)
+>>>>>>> Stashed changes
 
 # Correlation matrix
 plot_correlation(protein.c, type = "continuous", 
                  cor_args = list(use = "pairwise.complete.obs"))
 
 # Replace missing "Consensus" values with the mean of it's SVM and ANN values
-protein.c <- protein %>%
-  rowwise() %>% 
-  mutate(Consensus = replace_na(Consensus, mean(c(ANN, SVM)))) %>% 
-  arrange(SiteNum)
+#protein.c <- protein %>%
+ # rowwise() %>% 
+#  mutate(Consensus = replace_na(Consensus, mean(c(ANN, SVM)))) %>% 
+#  arrange(SiteNum)
 
 # Make linear model to impute missing PSSM values; regress on SVM & Consensus variables
 
 # model
+<<<<<<< Updated upstream
 imp_lm <- lm(PSSM ~ SVM + Consensus, data = protein.c)
 
 # Impute predicted values into our data
@@ -56,6 +64,14 @@ protein.test <- aregImpute(~ Consensus + SVM + normalization, data = protein.c)
 
 protein.test$imputed
 
+=======
+#imp_lm <- lm(PSSM ~ SVM+Consensus, data = protein.c)
+
+# Impute predicted values into our data
+#protein.c <- protein.c %>%
+#  rowwise() %>% 
+#  mutate(PSSM = replace_na(PSSM, predict(imp_lm, newdata = tibble(SVM, Consensus))))
+>>>>>>> Stashed changes
 source("HelpfulFunctions.R")
 # Scatterplots with smoothers (Using a function I made found in HelpfulFunctions.R)
 sp1 <- protein %>% scp_smooth(SVM, Response, col = Amino.Acid)

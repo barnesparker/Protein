@@ -38,18 +38,18 @@ rf$bestTune
 
 ### Support Vector Machine
 
-svmPoly <- train(form=Response~.,
+svm <- train(form=Response~.,
              data=(protein.train %>% select(-Set, -SiteNum)),
-             method='svmRadial',
+             method='svmLinear',
              trControl=trainControl(method="repeatedcv",
                                     number=10, #Number of pieces of your data
                                     repeats=3) #repeats=1 = "cv"
              #tuneGrid=expand.grid(C = 1)
 )
 beep()
-plot(svmPoly)
-svmPoly$bestTune
-svmPoly$results
+plot(svm)
+svm$bestTune
+svm$results
 svm.preds <- data.frame(Id=protein.test$SiteNum, Predicted=predict(svm, newdata=protein.test))
 write_csv(x=svm.preds, path="./PB_SVM_Preds.csv")
 
