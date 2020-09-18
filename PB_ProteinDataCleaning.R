@@ -23,53 +23,24 @@ summary(protein)
 ### Missing values
 plot_missing(protein)
 
+# Correlation matrix
+plot_correlation(protein.c, type = "continuous", 
+                 cor_args = list(use = "pairwise.complete.obs"))
+
 # Use random forests to fill NA values
 filled_nas <- protein %>% 
   select(-c(Response, Set)) %>% 
   as.data.frame() %>% 
   missForest()
 
-# protein.c %>% 
-#  bind_rows(filled_nas %>% )
-# forest$ximp
-
 # merge Response and Set back with other variables
 protein.c <- filled_nas$ximp %>%  
   merge(protein)
 
+# table of Amino Acid and Response
+addmargins(table(protein$Amino.Acid, protein$Response))
 
-# Correlation matrix
-plot_correlation(protein.c, type = "continuous", 
-                 cor_args = list(use = "pairwise.complete.obs"))
-
-# Replace missing "Consensus" values with the mean of it's SVM and ANN values
-#protein.c <- protein %>%
- # rowwise() %>% 
-#  mutate(Consensus = replace_na(Consensus, mean(c(ANN, SVM)))) %>% 
-#  arrange(SiteNum)
-
-# Make linear model to impute missing PSSM values; regress on SVM & Consensus variables
-
-# model
-
-imp_lm <- lm(PSSM ~ SVM + Consensus, data = protein.c)
-
-# Impute predicted values into our data
-protein.c <- protein.c %>%
-  rowwise() %>% 
-  mutate(PSSM = replace_na(PSSM, predict(imp_lm, newdata = tibble(SVM, Consensus))))
-
-protein.test <- aregImpute(~ Consensus + SVM + normalization, data = protein.c)
-
-protein.test$imputed
-
-
-#imp_lm <- lm(PSSM ~ SVM+Consensus, data = protein.c)
-
-# Impute predicted values into our data
-#protein.c <- protein.c %>%
-#  rowwise() %>% 
-#  mutate(PSSM = replace_na(PSSM, predict(imp_lm, newdata = tibble(SVM, Consensus))))
+### Visualization
 
 source("HelpfulFunctions.R")
 # Scatterplots with smoothers (Using a function I made found in HelpfulFunctions.R)
@@ -79,16 +50,14 @@ sp3 <- protein %>% scp_smooth(Iupred.score, Response, col = Amino.Acid)
 
 grid.arrange(sp1, sp2, sp3, ncol = 2)
 
-# table of Amino Acid and Response
-addmargins(table(protein$Amino.Acid, protein$Response))
-
-### Visualization
-
-plot_missing(protein.c)
-
 # Histograms
 protein.c %>% ggplot(mapping = aes(SVM)) + 
   geom_histogram(bins = 100)
+
+
+# Check that there are no missing values
+plot_missing(protein.c)
+
 
 protein.c %>% write_csv("ProteinCleaned.csv")
 
