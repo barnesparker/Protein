@@ -25,22 +25,32 @@ summary(protein)
 plot_missing(protein)
 # Consensus and PSSM have NAs
 
-# Table of Amino Acid and Response
-addmargins(table(protein$Amino.Acid, protein$Response))
-
-# Use random forests to fill NA values
-filled_nas <- protein %>% 
-  select(-c(Response, Set)) %>% 
-  as.data.frame() %>% 
-  missForest()
-
-# Merge Response and Set back with other variables
-protein.clean <- filled_nas$ximp %>%  cbind(., protein %>% select(Set, Response)) %>% select(Set, SiteNum, Response, Amino.Acid, Iupred.score, ANN, PSSM, SVM, Consensus, normalization)
-
 # Correlation matrix
-plot_correlation(protein.clean, 
+plot_correlation(protein, 
                  type = "continuous", 
                  cor_args = list(use = "pairwise.complete.obs"))
+
+PSSM.lm <- lm(PSSM ~ Iupred.score + ANN + SVM + normalization,
+              data = protein)
+
+summary(PSSM.lm)
+
+PSSM.preds <- predict(PSSM.lm, 
+                      newdata = (protein %>% filter(is.na(PSSM)))) + rnorm(sum(is.na(protein$PSSM)), 0, sigma(PSSM.lm))
+
+protein <- protein %>%
+  mutate(PSSM = replace(PSSM, is.na(PSSM), PSSM.preds))
+
+protein <- protein %>% rowwise %>% mutate(Consensus = replace(Consensus, is.na(Consensus), mean(SVM, PSSM, ANN)))
+
+# Use random forests to fill NA values
+# filled_nas <- protein %>% 
+#  select(-c(Response, Set)) %>% 
+#  as.data.frame() %>% 
+#  missForest()
+
+# Merge Response and Set back with other variables
+# protein.clean <- filled_nas$ximp %>%  cbind(., protein %>% select(Set, Response)) %>% select(Set, SiteNum, Response, Amino.Acid, Iupred.score, ANN, PSSM, SVM, Consensus, normalization)
 
 # Confirming that all NAs have been dealt with
 plot_missing(protein.clean)
