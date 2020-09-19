@@ -30,11 +30,11 @@ protein.clean <- protein.clean %>% mutate_at(vars(Amino.Acid, Response), factor)
 ## Machine Learning ##
 ######################
 
-protein_train <- protein.corr %>% filter(Set == 'train') %>% 
-  select(-Set, -SiteNum) %>% 
+protein_train <- protein.clean %>% filter(Set == 'train') %>% 
+  select(-Set, -SiteNum, -ANN, -SVM, -PSSM) %>% 
   mutate(Response = ifelse(Response == 1, 'Yes', 'No'))
 
-protein_test <- protein.corr %>% filter(Set == 'test') %>% select(-Set) 
+protein_test <- protein.clean %>% filter(Set == 'test') %>% select(-Set, -ANN, -SVM, -PSSM) 
 
 gbm.model <- train(Response ~ .,
                    data = protein_train,
