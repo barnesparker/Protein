@@ -95,7 +95,7 @@ xgb_tune <-train(form=Response~.,
 # helper function for the plots
 tuneplot <- function(x, probs = .90) {
   ggplot(x) +
-    coord_cartesian(ylim = c(quantile(x$results$Accuracy, probs = probs), min(x$results$Accuracy))) +
+    coord_cartesian(ylim = c(min(x$results$Accuracy), max(x$results$Accuracy))) +
     theme_bw()
 }
 
@@ -125,8 +125,8 @@ xgb_tune2 <- caret::train(
 
 tuneplot(xgb_tune2)
 xgb_tune2$bestTune
-min(xgb_tune$results$Accuracy)
-min(xgb_tune2$results$Accuracy)
+max(xgb_tune$results$Accuracy)
+max(xgb_tune2$results$Accuracy)
 
 ## Next tuning round
 tune_grid3 <- expand.grid(
@@ -148,11 +148,11 @@ xgb_tune3 <- caret::train(
   verbose=TRUE
 )
 
-tuneplot(xgb_tune3, probs = .95)
+tuneplot(xgb_tune3)
 xgb_tune3$bestTune
-min(xgb_tune$results$Accuracy)
-min(xgb_tune2$results$Accuracy)
-min(xgb_tune3$results$Accuracy)
+max(xgb_tune$results$Accuracy)
+max(xgb_tune2$results$Accuracy)
+max(xgb_tune3$results$Accuracy)
 
 ## Tuning the Gamma
 tune_grid4 <- expand.grid(
@@ -176,14 +176,14 @@ xgb_tune4 <- caret::train(
 
 tuneplot(xgb_tune4)
 xgb_tune4$bestTune
-min(xgb_tune$results$Accuracy)
-min(xgb_tune2$results$Accuracy)
-min(xgb_tune3$results$Accuracy)
-min(xgb_tune4$results$Accuracy)
+max(xgb_tune$results$Accuracy)
+max(xgb_tune2$results$Accuracy)
+max(xgb_tune3$results$Accuracy)
+max(xgb_tune4$results$Accuracy)
 
 ## Reduce learning rate
 tune_grid5 <- expand.grid(
-  nrounds = seq(from = 100, to = 10000, by = 100),
+  nrounds = seq(from = 100, to = 5000, by = 50),
   eta = c(0.01, 0.015, 0.025, 0.05, 0.1),
   max_depth = xgb_tune2$bestTune$max_depth,
   gamma = xgb_tune4$bestTune$gamma,
@@ -203,21 +203,21 @@ xgb_tune5 <- caret::train(
 
 tuneplot(xgb_tune5)
 xgb_tune5$bestTune
-min(xgb_tune$results$Accuracy)
-min(xgb_tune2$results$Accuracy)
-min(xgb_tune3$results$Accuracy)
-min(xgb_tune4$results$Accuracy)
-min(xgb_tune5$results$Accuracy)
+max(xgb_tune$results$Accuracy)
+max(xgb_tune2$results$Accuracy)
+max(xgb_tune3$results$Accuracy)
+max(xgb_tune4$results$Accuracy)
+max(xgb_tune5$results$Accuracy)
 
 ## Fit the model and predict
 final_grid <- expand.grid(
-  nrounds = xgb_tune3$bestTune$nrounds,
-  eta = xgb_tune3$bestTune$eta,
-  max_depth = xgb_tune3$bestTune$max_depth,
-  gamma = xgb_tune3$bestTune$gamma,
-  colsample_bytree = xgb_tune3$bestTune$colsample_bytree,
-  min_child_weight = xgb_tune3$bestTune$min_child_weight,
-  subsample = xgb_tune3$bestTune$subsample
+  nrounds = xgb_tune5$bestTune$nrounds,
+  eta = xgb_tune5$bestTune$eta,
+  max_depth = xgb_tune5$bestTune$max_depth,
+  gamma = xgb_tune5$bestTune$gamma,
+  colsample_bytree = xgb_tune5$bestTune$colsample_bytree,
+  min_child_weight = xgb_tune5$bestTune$min_child_weight,
+  subsample = xgb_tune5$bestTune$subsample
 )
 
 xgb_model <- caret::train(
