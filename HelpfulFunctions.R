@@ -7,18 +7,17 @@ scp_smooth <- function(data, x, y, ...) {
     geom_smooth()
 }
 
-# Linear Imputation -- DOESN'T WORK YET
-lin_imp <- function(df, na_var, pred_vars) {
-  # Make another tibble for model training
-  pred_df <- df %>% select({{na_var}}, {{pred_vars}})
-  
-  # Train a linear model
-  
-  mod <- lm(pred_df)
-  
-  # impute na values with model
-  df %>%  
-    rowwise() %>%
-    mutate("Hello" = replace_na({{na_var}}, predict(mod, newdata = tibble({{pred_vars}}))))
+mach_learn <- function(g, ) {
+  g.grid <- expand.grid(n.trees = 100, interaction.depth=1, shrinkage=.1, n.minobsinnode = 10)
+  gbm <- train(form=Response~.,
+               data=(protein.train %>% select(-Set, -SiteNum)),
+               method='gbm',
+               trControl=trainControl(method="repeatedcv",
+                                      number=10, #Number of pieces of your data
+                                      repeats=3,
+                                      summaryFunction = prSummary), #repeats=1 = "cv"
+               tuneGrid=g.grid
+  )
+  beep()
 }
 

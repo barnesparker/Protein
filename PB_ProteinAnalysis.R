@@ -39,11 +39,13 @@ rf$bestTune
 
 svm <- train(form=Response~.,
              data=(protein.train %>% select(-Set, -SiteNum)),
-             method='svmLinear',
+             method='svmPoly',
+             metric = "F",
              trControl=trainControl(method="repeatedcv",
                                     number=10, #Number of pieces of your data
                                     repeats=3,
-                                    summaryFunction = prSummary)#repeats=1 = "cv"
+                                    #classProbs = TRUE,
+                                    summaryFunction = prSummary)
              #tuneGrid=expand.grid(C = 1)
 )
 beep()
@@ -58,7 +60,9 @@ write_csv(x=svm.preds, path="./PB_SVM_Preds.csv")
 nb <- train(form=Response~.,
             data=(protein.train %>% select(-Set, -SiteNum)),
             method='nb',
+            metric = 'F',
             trControl=trainControl(method="repeatedcv",
+                                   summaryFunction = prSummary,
                                    number=10, #Number of pieces of your data
                                    repeats=3) #repeats=1 = "cv"
             #tuneGrid=enet.grid
@@ -73,7 +77,9 @@ g.grid <- expand.grid(n.trees = 100, interaction.depth=1, shrinkage=.1, n.minobs
 gbm <- train(form=Response~.,
              data=(protein.train %>% select(-Set, -SiteNum)),
              method='gbm',
+             metric="F",
              trControl=trainControl(method="repeatedcv",
+                                    #classProbs = TRUE,
                                     number=10, #Number of pieces of your data
                                     repeats=3,
                                     summaryFunction = prSummary), #repeats=1 = "cv"
