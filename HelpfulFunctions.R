@@ -7,17 +7,10 @@ scp_smooth <- function(data, x, y, ...) {
     geom_smooth()
 }
 
-mach_learn <- function(g, ) {
-  g.grid <- expand.grid(n.trees = 100, interaction.depth=1, shrinkage=.1, n.minobsinnode = 10)
-  gbm <- train(form=Response~.,
-               data=(protein.train %>% select(-Set, -SiteNum)),
-               method='gbm',
-               trControl=trainControl(method="repeatedcv",
-                                      number=10, #Number of pieces of your data
-                                      repeats=3,
-                                      summaryFunction = prSummary), #repeats=1 = "cv"
-               tuneGrid=g.grid
-  )
-  beep()
+f1 <- function(data, lev = NULL, model = NULL) {
+  
+  print(data)
+  f1_val <- F1_Score(y_pred = data$pred, y_true = data$obs, positive = TRUE)
+  c(F1=f1_val)
 }
 

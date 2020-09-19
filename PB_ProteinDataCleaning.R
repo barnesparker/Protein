@@ -14,7 +14,8 @@ protein.test <- read_csv("ProteinTest.csv")
 protein <- bind_rows(train = protein.train, test = protein.test, .id = "Set")
 # make Amino Acid a factor
 protein <- protein %>% 
-  mutate(Amino.Acid = as_factor(Amino.Acid))
+  mutate(Amino.Acid = as_factor(Amino.Acid)) %>% 
+  arrange(SiteNum)
 
 # Summary
 summary(protein)
@@ -27,15 +28,30 @@ plot_missing(protein)
 plot_correlation(protein.c, type = "continuous", 
                  cor_args = list(use = "pairwise.complete.obs"))
 
-# Use random forests to fill NA values
+# Use random forest to fill PSSM NA values
 filled_nas <- protein %>% 
-  select(-c(Response, Set)) %>% 
+  select(-c(Response, Set, SiteNum, Consensus)) %>% 
   as.data.frame() %>% 
   missForest()
+filled_nas <- filled_nas$ximp
 
-# merge Response and Set back with other variables
-protein.c <- filled_nas$ximp %>%  
-  merge(protein)
+# Stochastic Regression
+
+# make a lm to predict PSSM
+
+imp_lm <- lm(PSSM~., data = protein %>% select(-c(Response, Set, SiteNum, Consensus)))
+
+protein.c <- protein %>%
+  rowwise() %>% 
+  mutate(PSSM = replace_na(predict(imp_lm, data.frame(c(Amino.Acid, normalization, SVM, ANN, Iupred.score))) + rnorm(1)))
+# place newly completed column in df back with other variables
+protein <- protein %>%  
+  mutate(PSSM = filled_nas$PSSM)
+
+# Fill Consensus variable with average of SVM, PSSM, and ANN
+protein.c <- protein.c %>%
+  rowwise() %>% 
+  mutate(Consensus = replace_na(Consensus, mean(c(SVM, PSSM, ANN))))
 
 # table of Amino Acid and Response
 addmargins(table(protein$Amino.Acid, protein$Response))
