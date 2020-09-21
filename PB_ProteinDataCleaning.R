@@ -33,20 +33,12 @@ filled_nas <- protein %>%
   select(-c(Response, Set, SiteNum, Consensus)) %>% 
   as.data.frame() %>% 
   missForest()
+
 filled_nas <- filled_nas$ximp
 
-# Stochastic Regression
-
-# make a lm to predict PSSM
-
-imp_lm <- lm(PSSM~., data = protein %>% select(-c(Response, Set, SiteNum, Consensus)))
-
-protein.c <- protein %>%
-  rowwise() %>% 
-  mutate(PSSM = replace_na(predict(imp_lm, data.frame(c(Amino.Acid, normalization, SVM, ANN, Iupred.score))) + rnorm(1)))
-# place newly completed column in df back with other variables
 protein <- protein %>%  
-  mutate(PSSM = filled_nas$PSSM)
+  mutate(PSSM = filled_nas$PSSM,
+         Response = as.logical(Response))
 
 # Fill Consensus variable with average of SVM, PSSM, and ANN
 protein.c <- protein.c %>%
@@ -74,7 +66,7 @@ protein.c %>% ggplot(mapping = aes(SVM)) +
 # Check that there are no missing values
 plot_missing(protein.c)
 
-
+# Write cleaned data out to file
 protein.c %>% write_csv("ProteinCleaned.csv")
 
 
