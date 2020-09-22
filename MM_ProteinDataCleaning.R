@@ -4,9 +4,8 @@
 library(tidyverse)
 library(DataExplorer)
 library(zoo)
-library(gridExtra)
-library(car)
 library(missForest)
+library(caret)
 
 # Load in data and create one tibble
 protein.train <- read_csv("ProteinTrain.csv")
@@ -30,13 +29,27 @@ plot_correlation(protein,
                  type = "continuous", 
                  cor_args = list(use = "pairwise.complete.obs"))
 
-PSSM.lm <- lm(PSSM ~ Iupred.score + ANN + SVM + normalization,
-              data = protein)
+PSSM.xgb <- train(PSSM ~ .,
+                  data = protein %>% dplyr::select(-Response, -SiteNum, -Consensus, -Set) %>% filter(!is.na(PSSM)),
+                  method = 'xgbTree',
+                  trControl = trainControl(method = 'cv',
+                                           number = 10),
+                  tuneGrid = expand.grid(nrounds = 250,
+                                         max_depth = 3,
+                                         eta = .025,
+                                         gamma = 0,
+                                         colsample_bytree = .9,
+                                         min_child_weight = 1,
+                                         subsample = c(.8, .83333333))
+)
 
-summary(PSSM.lm)
+PSSM.xgb
 
-PSSM.preds <- predict(PSSM.lm, 
-                      newdata = (protein %>% filter(is.na(PSSM)))) + rnorm(sum(is.na(protein$PSSM)), 0, sigma(PSSM.lm))
+# PSSM.lm <- lm(PSSM ~ Iupred.score + ANN + SVM + normalization,
+#              data = protein)
+
+PSSM.preds <- predict(PSSM.xgb, 
+                      newdata = protein %>% filter(is.na(PSSM)))
 
 protein <- protein %>%
   mutate(PSSM = replace(PSSM, is.na(PSSM), PSSM.preds))

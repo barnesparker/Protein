@@ -9,6 +9,6 @@ scp_smooth <- function(data, x, y, ...) {
 
 f1 <- function(data, lev = NULL, model = NULL) {
   f1_val <- F1_Score(y_pred = data$pred, y_true = data$obs, positive = TRUE)
-  c(F1=f1_val)
+  c(F1 = f1_val)
 }
 
